@@ -1,5 +1,5 @@
 {
-  "name": "express-api-starter",
+  "name": "backend-class0",
   "version": "1.2.0",
   "description": "A basic starter for an express.js API",
   "main": "src/index.js",
@@ -10,10 +10,10 @@
     "test": "jest"
   },
   "keywords": [],
-  "author": "CJ R. <cj@null.computer> (https://w3cj.now.sh)",
+  "author": "sudotx",
   "repository": {
     "type": "git",
-    "url": "https://github.com/w3cj/express-api-starter.git"
+    "url": "https://github.com/sudotx/class0.git"
   },
   "license": "MIT",
   "dependencies": {
@@ -23,7 +23,8 @@
     "express": "^4.19.2",
     "helmet": "^7.1.0",
     "mongoose": "^8.6.0",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "winston": "^3.14.2"
   },
   "devDependencies": {
     "eslint": "^8.57.0",

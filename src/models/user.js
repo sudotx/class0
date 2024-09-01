@@ -24,17 +24,19 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+userSchema.pre("save", async function hashPassword(next) {
+  if (!this.isModified("password")) {
+    return next();
+  }
   this.password = await bcrypt.hash(this.password, 10);
-  next();
+  return next();
 });
 
-userSchema.methods.validatePassword = async function (password) {
-  return await bcrypt.compare(password, this.password);
+userSchema.methods.validatePassword = function validatePassword(password) {
+  return bcrypt.compare(password, this.password);
 };
 
-userSchema.pre("deleteOne", { document: true, query: false }, function (next) {
+userSchema.pre("deleteOne", { document: true, query: false }, (next) => {
   // Add any cleanup operations here if needed
   next();
 });
