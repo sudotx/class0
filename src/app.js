@@ -1,31 +1,31 @@
-const express = require('express');
-const morgan = require('morgan');
-const helmet = require('helmet');
-const cors = require('cors');
+const express = require("express");
+const morgan = require("morgan");
+const helmet = require("helmet");
+const cors = require("cors");
 
-const middlewares = require('./middlewares');
-const api = require('./routes');
+const middlewares = require("./middlewares");
+const api = require("./routes");
 
-require('dotenv').config();
+require("dotenv").config();
 
 const app = express();
 
-app.use(morgan('dev'));
+app.use(morgan("dev"));
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   res.json({
-    message: 'Hello World',
+    message: "Oh Men Im Active",
   });
 });
 
-app.use('/api/v1', api);
+app.use("/api/v1", api);
 
-app.use('*', (req, res) => {
+app.use("*", (req, res) => {
   res.status(404).json({
-    message: '🔍 - Endpoint Not Found',
+    message: "🔍 - Endpoint Not Found",
   });
 });
 
