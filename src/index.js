@@ -1,8 +1,8 @@
-const app = require('./app');
-const db = require('./utils/db');
-const logger = require('./utils/logger');
+const app = require("./app");
+const connectDB = require("./utils/db");
+const logger = require("./utils/logger");
 
-db();
+connectDB();
 
 const port = process.env.PORT || 5001;
 app.listen(port, () => {
