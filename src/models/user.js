@@ -1,8 +1,8 @@
-const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
-const { isEmail } = require("validator");
+import { Schema, model } from "mongoose";
+import { genSalt, hash, compare } from "bcrypt";
+// import { isEmail } from "validator";
 
-const userSchema = new mongoose.Schema(
+const userSchema = new Schema(
   {
     name: {
       type: String,
@@ -15,10 +15,6 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      validate: {
-        validator: isEmail,
-        message: "please enter a valid email",
-      },
     },
     password: {
       type: String,
@@ -45,15 +41,15 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.pre("save", async function hashPassword(next) {
-  const salt = await bcrypt.genSalt();
-  this.password = await bcrypt.hash(this.password, salt);
+  const salt = await genSalt();
+  this.password = await hash(this.password, salt);
   next();
 });
 
 userSchema.statics.login = async function (email, password) {
   const user = await this.findOne({ email });
   if (user) {
-    const auth = await bcrypt.compare(password, user.password);
+    const auth = await compare(password, user.password);
     if (auth) {
       return user;
     }
@@ -62,6 +58,6 @@ userSchema.statics.login = async function (email, password) {
   throw Error("incorrect email");
 };
 
-const User = mongoose.model("User", userSchema);
+const User = model("User", userSchema);
 
-module.exports = User;
+export default User;

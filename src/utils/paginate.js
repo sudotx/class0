@@ -12,4 +12,4 @@ function getPaginationData(page, limit, totalItems) {
   };
 }
 
-module.exports = getPaginationData;
+export default getPaginationData;

@@ -1,11 +1,12 @@
-const express = require("express");
+// const express = require("express");
+import express from "express";
 
 const router = express.Router();
-const getPaginationData = require("../utils/paginate");
+import getPaginationData from "../utils/paginate.js";
 
-const User = require("../models/user");
-const jwt = require("jsonwebtoken");
-const { requireAuth } = require("../middleware/middlewares");
+import User from "../models/user.js";
+import jwt from "jsonwebtoken";
+import { requireAuth } from "../middleware/middlewares.js";
 
 router.get("/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
@@ -178,4 +179,5 @@ const createToken = (id) => {
   });
 };
 
-module.exports = router;
+// module.exports = router;
+export default router;

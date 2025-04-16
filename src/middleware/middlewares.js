@@ -1,5 +1,5 @@
-const jwt = require("jsonwebtoken");
-const User = require("../models/user");
+import verify from "jsonwebtoken";
+import User from "../models/user.js";
 
 function notFound(req, res, next) {
   res.status(404);
@@ -23,7 +23,7 @@ const requireAuth = (req, res, next) => {
 
   // check json web token exists & is verified
   if (token) {
-    jwt.verify(token, "secret", (err, decodedToken) => {
+    verify(token, "secret", (err, decodedToken) => {
       if (err) {
         console.log(err.message);
         res.redirect("/login");
@@ -41,7 +41,7 @@ const requireAuth = (req, res, next) => {
 const checkUser = (req, res, next) => {
   const token = req.cookies.jwt;
   if (token) {
-    jwt.verify(token, "secret", async (err, decodedToken) => {
+    verify(token, "secret", async (err, decodedToken) => {
       if (err) {
         res.locals.user = null;
         next();
@@ -57,4 +57,4 @@ const checkUser = (req, res, next) => {
   }
 };
 
-module.exports = { requireAuth, checkUser, notFound, errorHandler };
+export { requireAuth, checkUser, notFound, errorHandler };

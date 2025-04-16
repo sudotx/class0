@@ -1,6 +1,6 @@
-const app = require("./app");
-const connectDB = require("./utils/db");
-const logger = require("./utils/logger");
+import app from "./app.js";
+import connectDB from "./utils/db.js";
+import logger from "./utils/logger.js";
 
 connectDB();
 
