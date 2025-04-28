@@ -1,157 +1,106 @@
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
 
-function notFound(req, res, next) {
-  res.status(404);
-  const error = new Error(`🔍 - Not Found - ${req.originalUrl}`);
-  next(error);
-}
+// 1. Basic Middleware Example - Logging
+// Demonstrates how middleware can intercept and log requests
+const requestLogger = (req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next(); // Always call next() to pass control to the next middleware
+};
 
-/* eslint-disable no-unused-vars */
-function errorHandler(err, req, res, next) {
-  /* eslint-enable no-unused-vars */
-  const statusCode = res.statusCode !== 200 ? res.statusCode : 500;
-  res.status(statusCode);
-  res.json({
+// 2. Error Handling Middleware
+// Shows how to handle errors in a centralized way
+const errorHandler = (err, req, res, next) => {
+  console.error("Error:", err.message);
+  res.status(500).json({
+    error: "Something went wrong!",
     message: err.message,
-    stack: process.env.NODE_ENV === "production" ? "🥞" : err.stack,
   });
-}
+};
 
+// 3. Authentication Middleware
+// Demonstrates basic JWT token verification
 const requireAuth = async (req, res, next) => {
   try {
     const token = req.cookies.jwt;
 
     if (!token) {
-      return res
-        .status(401)
-        .json({ message: "Authentication required - No token provided" });
+      return res.status(401).json({ message: "Please log in first" });
     }
 
-    const decodedToken = jwt.verify(token, "secret");
-
-    // Get user from database
-    const user = await User.findById(decodedToken.id);
+    const decoded = jwt.verify(token, "secret");
+    const user = await User.findById(decoded.id);
 
     if (!user) {
-      return res
-        .status(401)
-        .json({ message: "Authentication required - User not found" });
+      return res.status(401).json({ message: "User not found" });
     }
 
-    // Add user information to request object
-    req.user = {
-      id: user._id,
-      role: user.role,
-      ...user.toObject(),
-    };
-
+    // Attach user to request for use in subsequent middleware/routes
+    req.user = user;
     next();
   } catch (error) {
-    console.error("Auth error:", error);
-    if (error.name === "JsonWebTokenError") {
-      return res.status(401).json({ message: "Invalid token" });
-    }
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({ message: "Token expired" });
-    }
-    return res
-      .status(500)
-      .json({ message: "Internal server error during authentication" });
+    res.status(401).json({ message: "Invalid token" });
   }
 };
 
-// check current user
-const checkUser = async (req, res, next) => {
-  try {
-    const token = req.cookies.jwt;
-
-    if (!token) {
-      res.locals.user = null;
-      return next();
+// 4. Role-Based Access Control
+// Shows how to implement role-based permissions
+const checkRole = (allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Please log in first" });
     }
 
-    const decodedToken = jwt.verify(token, "secret");
-    const user = await User.findById(decodedToken.id);
-
-    if (!user) {
-      res.locals.user = null;
-      return next();
-    }
-
-    res.locals.user = user;
-    next();
-  } catch (error) {
-    console.error("Check user error:", error);
-    res.locals.user = null;
-    next();
-  }
-};
-
-const checkPayment = async (req, res, next) => {
-  try {
-    const user = req.user;
-
-    if (!user) {
-      return res.status(401).json({ message: "Authentication required" });
-    }
-
-    // Check if user has completed payment
-    if (!user.hasPaid) {
+    if (!allowedRoles.includes(req.user.role)) {
       return res.status(403).json({
-        message: "Payment required",
-        paymentUrl: `/api/users/${user._id}/payment`, // We'll implement this route later
+        message: "You do not have permission to access this resource",
+        requiredRoles: allowedRoles,
+        yourRole: req.user.role,
       });
     }
 
     next();
-  } catch (error) {
-    console.error("Payment check error:", error);
-    return res.status(500).json({ message: "Error checking payment status" });
-  }
-};
-
-const checkRole = (roles) => {
-  return async (req, res, next) => {
-    try {
-      // Get user from database using the ID from the JWT token
-      const user = await User.findById(req.user.id);
-
-      if (!user) {
-        return res
-          .status(401)
-          .json({ message: "Unauthorized - User not found" });
-      }
-
-      // Check if user's role is in the allowed roles array
-      if (!roles.includes(user.role)) {
-        return res.status(403).json({
-          message: "Forbidden - Insufficient permissions",
-          requiredRoles: roles,
-          userRole: user.role,
-        });
-      }
-
-      req.user = {
-        ...req.user,
-        ...user.toObject(),
-      };
-
-      next();
-    } catch (error) {
-      console.error("Role check error:", error);
-      return res
-        .status(500)
-        .json({ message: "Internal server error during role verification" });
-    }
   };
 };
 
+// 5. Request Validation Middleware
+// Demonstrates how to validate request data
+const validateUserData = (req, res, next) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({
+      message: "Email and password are required",
+    });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({
+      message: "Password must be at least 6 characters long",
+    });
+  }
+
+  next();
+};
+
+// 6. Response Time Middleware
+// Shows how to measure and log response times
+const responseTime = (req, res, next) => {
+  const start = Date.now();
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    console.log(`Request to ${req.url} took ${duration}ms`);
+  });
+
+  next();
+};
+
 export {
-  checkPayment,
-  checkRole,
-  checkUser,
+  requestLogger,
   errorHandler,
-  notFound,
   requireAuth,
+  checkRole,
+  validateUserData,
+  responseTime,
 };
