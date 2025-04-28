@@ -1,6 +1,5 @@
 import { Schema, model } from "mongoose";
 import { genSalt, hash, compare } from "bcrypt";
-// import { isEmail } from "validator";
 
 const userSchema = new Schema(
   {
@@ -26,15 +25,19 @@ const userSchema = new Schema(
       enum: ["user", "admin"],
       default: "user",
     },
-    userName: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
     isLoggedIn: {
       type: Boolean,
       default: false,
+    },
+    hasPaid: {
+      type: Boolean,
+      default: false,
+    },
+    paymentReference: {
+      type: String,
+    },
+    paymentDate: {
+      type: Date,
     },
   },
   { timestamps: true }

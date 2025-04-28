@@ -1,4 +1,4 @@
-import verify from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import User from "../models/user.js";
 
 function notFound(req, res, next) {
@@ -18,43 +18,140 @@ function errorHandler(err, req, res, next) {
   });
 }
 
-const requireAuth = (req, res, next) => {
-  const token = req.cookies.jwt;
+const requireAuth = async (req, res, next) => {
+  try {
+    const token = req.cookies.jwt;
 
-  // check json web token exists & is verified
-  if (token) {
-    verify(token, "secret", (err, decodedToken) => {
-      if (err) {
-        console.log(err.message);
-        res.redirect("/login");
-      } else {
-        console.log(decodedToken);
-        next();
-      }
-    });
-  } else {
-    res.json({ message: "😱 - You need to login first" });
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "Authentication required - No token provided" });
+    }
+
+    const decodedToken = jwt.verify(token, "secret");
+
+    // Get user from database
+    const user = await User.findById(decodedToken.id);
+
+    if (!user) {
+      return res
+        .status(401)
+        .json({ message: "Authentication required - User not found" });
+    }
+
+    // Add user information to request object
+    req.user = {
+      id: user._id,
+      role: user.role,
+      ...user.toObject(),
+    };
+
+    next();
+  } catch (error) {
+    console.error("Auth error:", error);
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Token expired" });
+    }
+    return res
+      .status(500)
+      .json({ message: "Internal server error during authentication" });
   }
 };
 
 // check current user
-const checkUser = (req, res, next) => {
-  const token = req.cookies.jwt;
-  if (token) {
-    verify(token, "secret", async (err, decodedToken) => {
-      if (err) {
-        res.locals.user = null;
-        next();
-      } else {
-        let user = await User.findById(decodedToken.id);
-        res.locals.user = user;
-        next();
-      }
-    });
-  } else {
+const checkUser = async (req, res, next) => {
+  try {
+    const token = req.cookies.jwt;
+
+    if (!token) {
+      res.locals.user = null;
+      return next();
+    }
+
+    const decodedToken = jwt.verify(token, "secret");
+    const user = await User.findById(decodedToken.id);
+
+    if (!user) {
+      res.locals.user = null;
+      return next();
+    }
+
+    res.locals.user = user;
+    next();
+  } catch (error) {
+    console.error("Check user error:", error);
     res.locals.user = null;
     next();
   }
 };
 
-export { requireAuth, checkUser, notFound, errorHandler };
+const checkPayment = async (req, res, next) => {
+  try {
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // Check if user has completed payment
+    if (!user.hasPaid) {
+      return res.status(403).json({
+        message: "Payment required",
+        paymentUrl: `/api/users/${user._id}/payment`, // We'll implement this route later
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Payment check error:", error);
+    return res.status(500).json({ message: "Error checking payment status" });
+  }
+};
+
+const checkRole = (roles) => {
+  return async (req, res, next) => {
+    try {
+      // Get user from database using the ID from the JWT token
+      const user = await User.findById(req.user.id);
+
+      if (!user) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized - User not found" });
+      }
+
+      // Check if user's role is in the allowed roles array
+      if (!roles.includes(user.role)) {
+        return res.status(403).json({
+          message: "Forbidden - Insufficient permissions",
+          requiredRoles: roles,
+          userRole: user.role,
+        });
+      }
+
+      req.user = {
+        ...req.user,
+        ...user.toObject(),
+      };
+
+      next();
+    } catch (error) {
+      console.error("Role check error:", error);
+      return res
+        .status(500)
+        .json({ message: "Internal server error during role verification" });
+    }
+  };
+};
+
+export {
+  checkPayment,
+  checkRole,
+  checkUser,
+  errorHandler,
+  notFound,
+  requireAuth,
+};

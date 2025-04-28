@@ -1,15 +1,26 @@
-const request = require("supertest");
-const mongoose = require("mongoose");
-const app = require("../src/app");
-require("dotenv").config();
-const User = require("../src/models/user");
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+} from "@jest/globals";
+import request from "supertest";
+import mongoose from "mongoose";
+import app from "../src/app.js";
+import "dotenv/config";
+import User from "../src/models/user.js";
 
 describe("User API", () => {
   beforeAll(async () => {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(
+      process.env.MONGO_URI || "mongodb://localhost:27017/test_db",
+      {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      }
+    );
   });
 
   afterAll(async () => {
@@ -29,13 +40,15 @@ describe("User API", () => {
       });
       await user.save();
 
-      const response = await request(app).get(`/api/v1/${user._id}`);
+      const response = await request(app).get(`/api/users/${user._id}`);
       expect(response.status).toBe(200);
       expect(response.body.message.name).toBe("Test User");
     });
 
     it("should return 404 if user not found", async () => {
-      const response = await request(app).get("/60f1a5c5c5b7f40015f1a5c5");
+      const response = await request(app).get(
+        "/api/users/60f1a5c5c5b7f40015f1a5c5"
+      );
       expect(response.status).toBe(404);
     });
   });
@@ -47,7 +60,7 @@ describe("User API", () => {
         { name: "User 2", email: "user2@example.com", password: "password2" },
       ]);
 
-      const response = await request(app).get("/api/v1/?page=1&limit=2");
+      const response = await request(app).get("/api/users?page=1&limit=2");
       expect(response.status).toBe(200);
       expect(response.body.users.length).toBe(2);
       expect(response.body.currentPage).toBe(1);
@@ -61,7 +74,7 @@ describe("User API", () => {
         email: "newuser@example.com",
         password: "newpassword",
       };
-      const response = await request(app).post("/api/v1/").send(userData);
+      const response = await request(app).post("/api/users").send(userData);
       expect(response.status).toBe(200);
       expect(response.body.message.name).toBe("New User");
     });
@@ -76,7 +89,7 @@ describe("User API", () => {
       });
       await user.save();
 
-      const response = await request(app).put(`/api/v1/${user._id}`).send({
+      const response = await request(app).put(`/api/users/${user._id}`).send({
         name: "Updated Name",
         email: "updated@example.com",
         password: "updatedpassword",
@@ -95,7 +108,7 @@ describe("User API", () => {
       });
       await user.save();
 
-      const response = await request(app).delete(`/api/v1/${user._id}`);
+      const response = await request(app).delete(`/api/users/${user._id}`);
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("User deleted successfully");
     });

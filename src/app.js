@@ -1,41 +1,38 @@
-import express, { json } from "express";
-import morgan from "morgan";
-import helmet from "helmet";
-import cors from "cors";
 import cookieParser from "cookie-parser";
+import cors from "cors";
+import express, { json } from "express";
+import helmet from "helmet";
+import morgan from "morgan";
 
-import {
-  requireAuth,
-  checkUser,
-  notFound,
-  errorHandler,
-} from "./middleware/middlewares.js";
-import api from "./routes/index.js";
 import dotenv from "dotenv";
+import { errorHandler } from "./middleware/middlewares.js";
+import api from "./routes/index.js";
 
 dotenv.config();
 
 const app = express();
 
+app.use(cors());
+
 app.use(morgan("dev"));
 app.use(helmet());
-app.use(cors());
 app.use(json());
-// app.use(express.static("public"));
 app.use(cookieParser());
-
-// app.set("view engine", "ejs");
 
 app.get("/", (req, res) => {
   res.json({
-    message: "Hello World",
+    status: "server currently running",
+    time: new Date().toISOString(),
   });
 });
 
-// app.use("/api/v1", api);
-app.use("/api/v1", requireAuth, api);
+app.use("/api", api);
 
-app.use("*", checkUser, notFound);
+app.use("*", (req, res) => {
+  res.status(404).json({
+    message: "Resource not found",
+  });
+});
 
 app.use(errorHandler);
 

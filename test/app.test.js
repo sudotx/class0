@@ -1,5 +1,6 @@
-const request = require("supertest");
-const app = require("../src/app");
+import { describe, it, expect } from "@jest/globals";
+import request from "supertest";
+import app from "../src/app.js";
 
 describe("app", () => {
   it("responds with a not found message", (done) => {
@@ -20,7 +21,8 @@ describe("GET /", () => {
       .expect(
         200,
         {
-          message: "Hello World",
+          status: "server currently running",
+          time: expect.any(String),
         },
         done
       );
