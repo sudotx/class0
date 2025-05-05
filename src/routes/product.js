@@ -61,11 +61,21 @@ router.post("/", checkRole(["admin"]), async (req, res) => {
 
 // Update product (admin only)
 router.put("/:id", checkRole(["admin"]), async (req, res) => {
+  const { id } = req.params;
+  const { name, price, description } = req.body;
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const product = await Product.findByIdAndUpdate(
+      id,
+      {
+        name: name,
+        price: price,
+        description: description,
+      },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }

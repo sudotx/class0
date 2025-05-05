@@ -1,9 +1,5 @@
 import express from "express";
-import {
-  checkPayment,
-  checkRole,
-  requireAuth,
-} from "../middleware/middlewares.js";
+import { checkRole, requireAuth } from "../middleware/middlewares.js";
 import Cart from "../models/cart.js";
 import Order from "../models/order.js";
 import Product from "../models/product.js";
@@ -15,7 +11,7 @@ const router = express.Router();
 router.use(requireAuth);
 
 // Create order from cart
-router.post("/", checkPayment, async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const cart = await Cart.findOne({ user: req.user.id }).populate(
       "items.product"
@@ -62,7 +58,7 @@ router.post("/", checkPayment, async (req, res) => {
 });
 
 // Get user's orders
-router.get("/", checkPayment, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user.id })
       .populate("items.product", "name images")

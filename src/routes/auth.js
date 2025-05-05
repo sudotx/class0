@@ -20,8 +20,13 @@ router.post("/login", async (req, res) => {
   try {
     const user = await User.login(email, password);
     const token = createToken(user._id);
-    res.cookie("jwt", token, { httpOnly: true, maxAge: maxAge * 1000 });
-    res.status(200).json({ result, user: user._id });
+    res.cookie("jwt", token, {
+      httpOnly: true,
+      maxAge: maxAge * 1000,
+      sameSite: "strict",
+      secure: "production",
+    });
+    res.status(200).json({ user: user._id });
   } catch (error) {
     const errors = handleErrors(error);
     res.status(400).json({ errors });
